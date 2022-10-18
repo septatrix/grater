@@ -154,11 +154,7 @@ fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
         //println!("{:?}", module);
         modules.push(module);
 
-        if section.1 - module_credits == 0.0 {
-            curr_section = None;
-        } else {
-            curr_section = Some((section.0.clone(), section.1 - module_credits));
-        }
+        curr_section = Some((section.0.clone(), section.1 - module_credits));
     }
 
     modules
