@@ -173,7 +173,6 @@ async function loadPage(page: PDFPageProxy) {
 
   let tables = [];
   for (let { vRulers, hRulers } of regionsWithRulers) {
-    if (hRulers.length > 10) continue;
     // handle merge cells
     let merges = detectMergedCells(vRulers, hRulers);
 
@@ -424,20 +423,13 @@ function detectMergedCells(verticalRulers: any[], horizontalRulers: any[]) {
     return -1;
   }
 
+  // TODO check if we need sorting? See y_list
   let x_list = verticalRulers.map((a) => a.x);
-  // check top_out and bottom_out
-  // TODO double check if sorting is really required here
-  let y_list = horizontalRulers.map((a) => a.y).sort((a, b) => b - a);
-
-  let y_max = Math.max(...verticalRulers.map((vert) => vert.lines[0].bottom));
-  let y_min = Math.min(...verticalRulers.map((vert) => vert.lines.at(-1).top));
-  let top_out = search_index(y_min, y_list) == -1 ? 1 : 0;
-  let bottom_out = search_index(y_max, y_list) == -1 ? 1 : 0;
 
   let verticle_merges = {};
   // skip the 1st lines and final lines
-  for (let r = 0; r < horizontalRulers.length - 2 + top_out + bottom_out; r++) {
-    let hor = horizontalRulers[bottom_out + horizontalRulers.length - r - 2];
+  for (let r = 0; r < horizontalRulers.length - 2; r++) {
+    let hor = horizontalRulers[0 + horizontalRulers.length - r - 2];
     let col = search_index(hor.lines[0].left, x_list);
     if (col != 0) {
       for (let c = 0; c < col; c++) {
@@ -464,8 +456,8 @@ function detectMergedCells(verticalRulers: any[], horizontalRulers: any[]) {
       }
       col = right_col;
     }
-    if (col != verticalRulers.length - 1 + top_out) {
-      for (let c = col; c < verticalRulers.length - 1 + top_out; c++) {
+    if (col != verticalRulers.length - 1) {
+      for (let c = col; c < verticalRulers.length - 1; c++) {
         verticle_merges[`${r}-${c}`] = {
           row: r,
           col: c,
@@ -493,61 +485,36 @@ function detectMergedCells(verticalRulers: any[], horizontalRulers: any[]) {
     }
   }
 
+  // TODO check if we can get rid of the sorting?
+  let y_list = horizontalRulers.map((a) => a.y).sort((a, b) => b - a);
+
   let horizon_merges = {};
-  for (let c = 0; c < verticalRulers.length - 2; c++) {
-    let ver = verticalRulers[c + 1];
-    let row = search_index(ver.lines[0].bottom, y_list) + bottom_out;
-    if (row != 0) {
-      console.log(c, ver, row, y_list, bottom_out);
-      for (let r = 0; r < row; r++) {
-        horizon_merges[`${r}-${c}`] = {
+  for (let [col, ruler] of verticalRulers.slice(1, -1).entries()) {
+    let currentRow = 0;
+    // TODO try to eliminate need for reverse()
+    for (let line of ruler.lines.reverse()) {
+      let startRow = search_index(line.bottom, y_list);
+      for (; currentRow < startRow; currentRow++) {
+        horizon_merges[`${currentRow}-${col}`] = {
+          row: currentRow,
+          col,
+          width: 2,
+          height: 1,
+        };
+      }
+      let endRow = search_index(line.top, y_list);
+      currentRow = endRow === -1 ? y_list.length : endRow;
+    }
+    if (currentRow != horizontalRulers.length - 1) {
+      for (let r = currentRow; r < horizontalRulers.length - 1; r++) {
+        horizon_merges[`${r}-${col}`] = {
           row: r,
-          col: c,
+          col,
           width: 2,
           height: 1,
         };
       }
     }
-    for (let line of ver.lines) {
-      let top_row = search_index(line.top, y_list);
-      if (top_row == -1) {
-        top_row = y_list.length + bottom_out;
-      } else {
-        top_row += bottom_out;
-      }
-      let bottom_row = search_index(line.bottom, y_list) + bottom_out;
-      if (bottom_row != row) {
-        for (let r = bottom_row; r < row; r++) {
-          horizon_merges[`${r}-${c}`] = {
-            row: r,
-            col: c,
-            width: 2,
-            height: 1,
-          };
-        }
-      }
-      row = top_row;
-    }
-    if (row != horizontalRulers.length - 1 + bottom_out + top_out) {
-      for (
-        let r = row;
-        r < horizontalRulers.length - 1 + bottom_out + top_out;
-        r++
-      ) {
-        horizon_merges[`${r}-${c}`] = {
-          row: r,
-          col: c,
-          width: 2,
-          height: 1,
-        };
-      }
-    }
-  }
-  if (top_out) {
-    horizontalRulers.unshift({ y: y_min, lines: [] });
-  }
-  if (bottom_out) {
-    horizontalRulers.push({ y: y_max, lines: [] });
   }
 
   while (true) {

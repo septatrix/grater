@@ -2,14 +2,16 @@
   import * as pdfjsLib from "pdfjs-dist";
   import pdfjsWorker from "pdfjs-dist/build/pdf.worker.js?worker";
   import loadPage from "../pdf-table-extractor";
-  import samplePdf from "../../samples/grater-sample.pdf";
+  // import pdfUrl from "../../samples/grater-sample.pdf";
+  // import pdfUrl from "../../samples/Notenspiegel_(Alles)_12102022_0010_4713409_20221012001001.pdf";
+  import pdfUrl from "../../samples/Kontoauszug_12102022_0010_4713410_20221012001019.pdf";
 
   let canvas: HTMLCanvasElement;
   let loadPromises = [];
 
   async function showPdf() {
     const pdf = await pdfjsLib.getDocument({
-      url: samplePdf,
+      url: pdfUrl,
       worker: pdfjsLib.PDFWorker.fromPort({ port: new pdfjsWorker() }),
     }).promise;
 
@@ -24,7 +26,7 @@
       );
     }
 
-    const page = await pdf.getPage(1);
+    /*const page = await pdf.getPage(1);
     let viewport = page.getViewport({ scale: 1 });
 
     // Prepare canvas using PDF page dimensions
@@ -62,9 +64,7 @@
     }
     context.stroke();
     context.closePath();
-    globalThis.ctx = context;
-
-    Promise.all(loadPromises).then(console.log);
+    globalThis.ctx = context;*/
   }
   console.log("Page loaded");
 
@@ -111,7 +111,7 @@
   td {
     border: 1px solid;
   }
-  table {
-    display: inline-block;
+  canvas {
+    display: none;
   }
 </style>
