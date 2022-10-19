@@ -5,9 +5,10 @@
   // import pdfUrl from "../../samples/grater-sample.pdf";
   // import pdfUrl from "../../samples/Notenspiegel_(Alles)_12102022_0010_4713409_20221012001001.pdf";
   import pdfUrl from "../../samples/Kontoauszug_12102022_0010_4713410_20221012001019.pdf";
+  import * as grater from "../../pkg/grater";
 
-  let canvas: HTMLCanvasElement;
-  let loadPromises = [];
+  let result = "";
+  let modules = [];
 
   async function showPdf() {
     const pdf = await pdfjsLib.getDocument({
@@ -15,9 +16,11 @@
       worker: pdfjsLib.PDFWorker.fromPort({ port: new pdfjsWorker() }),
     }).promise;
 
-    loadPromises = [];
+    let loadPromises = [];
 
-    for (let i = 1; i <= pdf.numPages; i++) {
+    // We only care for the first half of pages
+    // as the second half is the same in english
+    for (let i = 1; i <= pdf.numPages / 2; i++) {
       loadPromises.push(
         (async () => {
           const page = await pdf.getPage(i);
@@ -26,92 +29,42 @@
       );
     }
 
-    /*const page = await pdf.getPage(1);
-    let viewport = page.getViewport({ scale: 1 });
+    const rawData = await Promise.all(loadPromises);
+    const preparedData = rawData
+      .flat()
+      .map((table) =>
+        table.table.map((row) =>
+          row.map((cell) => (cell === null ? "" : cell.trim()))
+        )
+      );
 
-    // Prepare canvas using PDF page dimensions
-    let context = canvas.getContext("2d");
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-
-    // Render PDF page into canvas context
-    await page.render({
-      canvasContext: context,
-      viewport: viewport,
-    }).promise;
-
-    context.strokeStyle = "red";
-    context.lineWidth = 2;
-    context.setTransform(new DOMMatrix(viewport.transform));
-    context.beginPath();
-    for (let col of temp1) {
-      for (let line of col.lines) {
-        context.strokeRect(col.x, line.top, 2, 2);
-        context.moveTo(col.x, line.top);
-        context.lineTo(col.x, line.bottom);
-      }
-    }
-    context.stroke();
-    context.closePath();
-    context.strokeStyle = "blue";
-    context.beginPath();
-    for (let col of temp2) {
-      for (let line of col.lines) {
-        context.strokeRect(line.left, col.y, 2, 2);
-        context.moveTo(line.left, col.y);
-        context.lineTo(line.right, col.y);
-      }
-    }
-    context.stroke();
-    context.closePath();
-    globalThis.ctx = context;*/
+    modules = grater.extract_modules(preparedData);
+    result = grater.calculate_best_grade(modules);
   }
   console.log("Page loaded");
 
   showPdf();
 </script>
 
-<canvas bind:this={canvas} style="vertical-align: top;" />
-
-{#each loadPromises as loadPromise, i}
-  <div class="table-container" style="width: 45%; display: inline-block;">
-    <h3>Page: {i + 1}</h3>
-    {#await loadPromise}
-      Loading...
-    {:then tables}
-      {#if !tables}
-        No data found
-      {:else}
-        {#each tables as table}
-          <p>Dimensions: {table.height} x {table.width}</p>
-
-          <table>
-            {#each table.table as row, r}
-              <tr>
-                {#each row as data, c}
-                  {#if data != null}
-                    <td
-                      colspan={(table.merges[`${r}-${c}`] || {}).width}
-                      rowspan={(table.merges[`${r}-${c}`] || {}).height}
-                      >{data}</td
-                    >
-                  {/if}
-                {/each}
-              </tr>
-            {/each}
-          </table>
-        {/each}
-      {/if}
-    {/await}
-  </div>
-{/each}
+<pre>{result}</pre>
+<table>
+  {#each modules as module}
+    <tr>
+      <td>{module.label}</td>
+      <td>{module.credits}</td>
+      <td
+        >{module.grade.Numeric
+          ? module.grade.Numeric.toFixed(2)
+          : module.grade}</td
+      >
+      <td>{module.weight_modifier !== 1 ? module.weight_modifier : ""}</td>
+    </tr>
+  {/each}
+</table>
 
 <style>
   table,
   td {
     border: 1px solid;
-  }
-  canvas {
-    display: none;
   }
 </style>

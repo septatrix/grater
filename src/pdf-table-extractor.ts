@@ -75,9 +75,9 @@ async function loadPage(page: PDFPageProxy) {
     lines = lines_add_verticle(lines, current_y, current_y + current_height);
   }
 
-  // no table
+  // no data
   if (current_x === null || lines.length == 0) {
-    return;
+    return [];
   }
   verticalRulers.push({ x: current_x, lines: lines });
   globalThis.temp1 = verticalRulers;
@@ -129,9 +129,9 @@ async function loadPage(page: PDFPageProxy) {
   if (current_width > line_max_width) {
     lines = lines_add_horizon(lines, current_x, current_x + current_width);
   }
-  // no table
+  // no data
   if (current_y === null || lines.length == 0) {
-    return;
+    return [];
   }
   horizontalRulers.push({ y: current_y, lines: lines });
   globalThis.temp2 = horizontalRulers;
@@ -239,6 +239,8 @@ async function loadPage(page: PDFPageProxy) {
         let id = merge_alias[`${row}-${col}`];
         [row, col] = id.split("-");
       }
+      // TODO reintroduce table_pos to insert \n or at least " "
+      // for intra-cell line breaks (see e.g. ET2)
       table[row][col] += item.str;
     }
 

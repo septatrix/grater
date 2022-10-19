@@ -1,42 +1,26 @@
 #![feature(is_some_and)]
-use std::{cmp::Ordering, collections::HashMap, io::Read};
+use std::panic;
+use std::{cmp::Ordering, collections::HashMap, fmt::Write};
 
 use itertools::Itertools;
 use phf::{phf_map, Map};
 use serde::{Deserialize, Serialize};
-use tabula::{ExtractionMethod, OutputFormat, TabulaVM};
+use wasm_bindgen::prelude::*;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct CellOutput {
-    top: f32,
-    left: f32,
-    width: f32,
-    height: f32,
-    text: String,
-}
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct TableOutput {
-    extraction_method: String, // TODO make enum
-    page_number: u32,
-    top: f32,
-    left: f32,
-    width: f32,
-    height: f32,
-    right: f32,
-    bottom: f32,
-    // List of rows with cells
-    data: Vec<Vec<CellOutput>>, // TODO rename but keep name for serde
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 enum Grade {
     Passed,
     Numeric(f32),
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Module {
     category: String,
     label: String,
@@ -55,53 +39,36 @@ const MODULE_WEIGHT: Map<&'static str, f32> = phf_map!(
     "Nicht-technisches Wahlfach Mentoring" => 0.0,
 );
 
-fn main() {
-    let vm = TabulaVM::new("/home/septatrix/Documents/programming/tabula-java/target/tabula-1.0.6-SNAPSHOT-jar-with-dependencies.jar", true).unwrap();
-    let env = vm.attach().unwrap();
-
-    let tabula = env
-        .configure_tabula(
-            None,
-            Some(&[1, 2, 3, 4, 5]),
-            OutputFormat::Json,
-            true,
-            ExtractionMethod::Spreadsheet,
-            false,
-            None,
-        )
-        .unwrap();
-    let mut file = tabula
-        .parse_document(
-            // &std::path::Path::new("./samples/Kontoauszug_21092022_2035_4635315_20220921203533.pdf"),
-            &std::path::Path::new("samples/Kontoauszug_12102022_0010_4713410_20221012001019.pdf"),
-            "foobar",
-        )
-        .unwrap();
-    let mut fin = String::new();
-    file.read_to_string(&mut fin).unwrap();
-    let output: Vec<TableOutput> = serde_json::from_str(fin.as_str()).unwrap();
-
-    let modules = parse_tabula_output(output);
-
-    calculate_best_strike_combination(&modules);
+#[wasm_bindgen(start)]
+pub fn set_panic_hook() {
+    //#[cfg(feature = "console_error_panic_hook")]
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
 }
 
-fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
+#[wasm_bindgen]
+pub fn extract_modules(input: JsValue) -> Result<JsValue, JsValue> {
+    let output = serde_wasm_bindgen::from_value(input)?;
+    let modules = parse_tabula_output(output);
+    calculate_best_strike_combination(&modules);
+    Ok(serde_wasm_bindgen::to_value(&modules)?)
+}
+
+fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
     let mut curr_section = None;
     let mut modules = Vec::new();
 
-    for row in output.into_iter().flat_map(|table| table.data) {
+    for row in output.into_iter().flatten() {
         // TODO use #![feature(let_else)] once stabilized
         // Modul-ID Typ Module/Fächer Note Vm Ang CP Datum Sem
         let (kind_text, module, grade, credit_points) = if let [ref _module_id, ref kind, ref module, ref grade, ref _annotation, ref _recognized, ref credit_points, ref _date, ref _semester] =
             row.as_slice()
         {
-            (kind.text.clone(), module, grade, credit_points)
+            (kind.clone(), module, grade, credit_points)
         } else if let [ref _module_id, ref module, ref grade, ref _annotation, ref _recognized, ref credit_points, ref _date, ref _semester] =
             row.as_slice()
         {
-            if module.text == "Abschlussarbeit" {
-                curr_section = Some((module.text.clone(), 15.0));
+            if module == "Abschlussarbeit" {
+                curr_section = Some((module.clone(), 15.0));
                 continue;
             }
             // We assume that this is the Abschlussarbeit section.
@@ -112,8 +79,8 @@ fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
             continue;
         };
 
-        let module_name = module.text.replace('\r', " ");
-        let module_credits = credit_points.text.replace(',', ".").parse().unwrap_or(0.0);
+        let module_name = module.replace('\n', " ");
+        let module_credits = credit_points.replace(',', ".").parse().unwrap_or(0.0);
 
         // Module groups
         if kind_text == "RK" {
@@ -129,7 +96,7 @@ fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
         }
 
         // Skip miscellaneous rows like failed/unfinished modules
-        if kind_text != "MK" || grade.text == "" {
+        if kind_text != "MK" || grade == "" {
             continue;
         }
 
@@ -143,7 +110,6 @@ fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
             category: section.0.clone(),
             label: module_name.clone(),
             grade: grade
-                .text
                 .replace(',', ".")
                 .parse::<f32>()
                 // TODO assert that grade is "B" in case or parsing error
@@ -160,7 +126,14 @@ fn parse_tabula_output(output: Vec<TableOutput>) -> Vec<Module> {
     modules
 }
 
-fn calculate_best_strike_combination(modules: &[Module]) {
+#[wasm_bindgen]
+pub fn calculate_best_grade(input: JsValue) -> Result<JsValue, JsValue> {
+    let modules: Vec<Module> = serde_wasm_bindgen::from_value(input)?;
+    let result = calculate_best_strike_combination(&modules);
+    Ok(JsValue::from_str(&result))
+}
+
+fn calculate_best_strike_combination(modules: &[Module]) -> String {
     // TODO maybe replace with itertools.group_by if sorting is guaranteed
     let mut strike_candidates_by_category = HashMap::<_, Vec<_>>::new();
     for module in modules.iter() {
@@ -208,15 +181,22 @@ fn calculate_best_strike_combination(modules: &[Module]) {
         .unwrap()
         .1;
 
-    println!("Best possible grade: {}", best_grade);
-    println!("The following strike combinations lead to this grade:");
+    let mut summary = String::new();
+    writeln!(summary, "Best possible grade: {}", best_grade).unwrap();
+    writeln!(
+        summary,
+        "The following strike combinations lead to this grade:"
+    )
+    .unwrap();
 
     for (combi, _) in grade_results
         .into_iter()
         .filter(|(_, grade)| grade == &best_grade)
     {
-        println!("{:#?}", combi);
+        write!(summary, "{:#?}", combi).unwrap();
     }
+
+    summary
 }
 
 fn calculate_grade<'a>(modules: impl IntoIterator<Item = &'a Module>) -> f32 {
