@@ -263,7 +263,7 @@ async function loadPage(page: PDFPageProxy) {
 
 export default loadPage;
 
-async function extractLines(page, line_max_width: number) {
+async function extractLines(page: PDFPageProxy, line_max_width: number) {
   let edges = [];
 
   let current_x;

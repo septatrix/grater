@@ -1,18 +1,22 @@
 <script lang="ts">
   import * as pdfjsLib from "pdfjs-dist";
-  import pdfjsWorker from "pdfjs-dist/build/pdf.worker.js?worker";
+  import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js?worker";
   import loadPage from "../pdf-table-extractor";
-  // import pdfUrl from "../../samples/grater-sample.pdf";
-  // import pdfUrl from "../../samples/Notenspiegel_(Alles)_12102022_0010_4713409_20221012001001.pdf";
-  import pdfUrl from "../../samples/Kontoauszug_12102022_0010_4713410_20221012001019.pdf";
   import * as grater from "../../pkg/grater";
+  import type { Module } from "../../pkg/grater";
+  import trashIconSvg from "bootstrap-icons/icons/trash.svg?raw";
+  import uploadIconSvg from "bootstrap-icons/icons/file-earmark-arrow-up.svg?raw";
 
   let result = "";
-  let modules = [];
+  let modulesByCategory: Record<string, Module[]> = {};
 
-  async function showPdf() {
+  async function loadPdf(e) {
+    let fileInput: HTMLInputElement = e.target;
+    let files = fileInput.files;
+    let data = await files[0].arrayBuffer();
+
     const pdf = await pdfjsLib.getDocument({
-      url: pdfUrl,
+      data: data,
       worker: pdfjsLib.PDFWorker.fromPort({ port: new pdfjsWorker() }),
     }).promise;
 
@@ -37,34 +41,86 @@
           row.map((cell) => (cell === null ? "" : cell.trim()))
         )
       );
+    preparedData.forEach((table) => console.table(table));
+    let modules = grater.extract_modules(preparedData);
+    console.table(modules);
+    for (let module of modules) {
+      if (!(module.category in modulesByCategory)) {
+        modulesByCategory[module.category] = [];
+      }
+      modulesByCategory[module.category].push(module);
+    }
+  }
 
-    modules = grater.extract_modules(preparedData);
+  function onSubmit() {
+    let modules = Object.values(modulesByCategory).flat();
     result = grater.calculate_best_grade(modules);
   }
-  console.log("Page loaded");
 
-  showPdf();
+  //showPdf();
 </script>
 
 <pre>{result}</pre>
-<table>
-  {#each modules as module}
-    <tr>
-      <td>{module.label}</td>
-      <td>{module.credits}</td>
-      <td
-        >{module.grade.Numeric
-          ? module.grade.Numeric.toFixed(2)
-          : module.grade}</td
-      >
-      <td>{module.weight_modifier !== 1 ? module.weight_modifier : ""}</td>
-    </tr>
-  {/each}
-</table>
 
-<style>
-  table,
-  td {
-    border: 1px solid;
-  }
-</style>
+<form on:submit|preventDefault={onSubmit}>
+  <label class="w-100 mb-3">
+    <span class="btn btn-secondary w-100">
+      {@html uploadIconSvg} Upload Kontoauszug
+    </span>
+    <input class="visually-hidden" type="file" on:input={loadPdf} />
+  </label>
+
+  <button
+    class="btn btn-primary mb-3 w-100"
+    disabled={!Object.values(modulesByCategory).flat().length}>Calculate</button
+  >
+  {#each Object.entries(modulesByCategory) as [category, modules]}
+    <fieldset class="card mb-3 shadow">
+      <div class="card-body">
+        <legend class="card-title">{category}</legend>
+        <div class="row g-2">
+          {#each modules as mod}
+            <div class="col-8">
+              <label class="w-100">
+                <span class="visually-hidden">Modulname</span>
+                <input disabled value={mod.label} class="form-control" />
+              </label>
+            </div>
+            <div class="col">
+              <label class="w-100">
+                <span class="visually-hidden">ECTS</span>
+                <input
+                  disabled
+                  value={mod.credits}
+                  class="form-control text-center"
+                />
+              </label>
+            </div>
+            <div class="col">
+              <label class="w-100">
+                <span class="visually-hidden">Grade</span>
+                <input
+                  disabled
+                  value={mod.grade == "Passed"
+                    ? "B"
+                    : mod.grade.Numeric.toFixed(1)}
+                  class="form-control text-center"
+                />
+              </label>
+            </div>
+            <div class="col">
+              <label class="w-100">
+                <span class="visually-hidden">Weight</span>
+                <input
+                  disabled
+                  value={mod.weight_modifier}
+                  class="form-control text-center"
+                />
+              </label>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </fieldset>
+  {/each}
+</form>

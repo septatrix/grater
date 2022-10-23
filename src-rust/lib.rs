@@ -14,8 +14,9 @@ enum Grade {
 }
 
 #[allow(dead_code)]
+#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
-struct Module {
+pub struct Module {
     category: String,
     label: String,
     grade: Grade,
@@ -67,7 +68,10 @@ fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
             }
             // We assume that this is the Abschlussarbeit section.
             // Otherwise the layout must have been misparsed.
-            assert!(curr_section.as_ref().unwrap().0 == "Abschlussarbeit");
+            assert!(
+                curr_section.as_ref().expect("Current section must exist").0 == "Abschlussarbeit",
+                "Current section must be 'Abschlussarbeit' with expected layout"
+            );
             ("MK".to_string(), module, grade, credit_points)
         } else {
             continue;
