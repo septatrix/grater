@@ -23,7 +23,7 @@ jobs:
           RUSTUP_TOOLCHAIN: nightly
       - uses: actions/setup-node@v3
       - run: npm ci
-      - run: npm run build
+      - run: npm run build -- --base="./"
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
