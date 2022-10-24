@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as pdfjsLib from "pdfjs-dist";
-  import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js?worker";
+  import * as pdfjs from "pdfjs-dist/build/pdf";
+  import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
   import loadPage from "../pdf-table-extractor";
   import * as grater from "../../pkg/grater";
   import type { Module } from "../../pkg/grater";
@@ -15,9 +15,9 @@
     let files = fileInput.files;
     let data = await files[0].arrayBuffer();
 
-    const pdf = await pdfjsLib.getDocument({
-      data: data,
-      worker: pdfjsLib.PDFWorker.fromPort({ port: new pdfjsWorker() }),
+    const pdf = await pdfjs.getDocument({
+      data,
+      worker: pdfjs.PDFWorker.fromPort({ port: new pdfjsWorker() }),
     }).promise;
 
     let loadPromises = [];
@@ -56,8 +56,6 @@
     let modules = Object.values(modulesByCategory).flat();
     result = grater.calculate_best_grade(modules);
   }
-
-  //showPdf();
 </script>
 
 <pre>{result}</pre>
