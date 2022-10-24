@@ -19,6 +19,8 @@ jobs:
           target: wasm32-unknown-unknown
       - run: cargo install wasm-pack
       - run: wasm-pack build
+        env:
+          RUSTUP_TOOLCHAIN: nightly
       - uses: actions/setup-node@v3
       - run: npm ci
       - run: npm run build
