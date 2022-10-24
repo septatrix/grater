@@ -81,20 +81,18 @@ fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
         let module_credits = credit_points.replace(',', ".").parse().unwrap_or(0.0);
 
         // Module groups
-        if kind_text == "RK" {
-            if curr_section.is_none()
-                || curr_section
-                    .as_ref()
-                    .is_some_and(|s| s.1 == 0.0 && module_credits > 0.0)
-            {
-                let section_name = module_name;
-                curr_section = Some((section_name, module_credits));
-                continue;
-            }
+        if kind_text == "RK" && curr_section.is_none()
+            || curr_section
+                .as_ref()
+                .is_some_and(|s| s.1 == 0.0 && module_credits > 0.0)
+        {
+            let section_name = module_name;
+            curr_section = Some((section_name, module_credits));
+            continue;
         }
 
         // Skip miscellaneous rows like failed/unfinished modules
-        if kind_text != "MK" || grade == "" {
+        if kind_text != "MK" || grade.is_empty() {
             continue;
         }
 
@@ -111,7 +109,7 @@ fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
                 .replace(',', ".")
                 .parse::<f32>()
                 // TODO assert that grade is "B" in case or parsing error
-                .map_or(Grade::Passed, |g| Grade::Numeric(g)),
+                .map_or(Grade::Passed, Grade::Numeric),
             credits: module_credits,
             weight_modifier: *MODULE_WEIGHT.get(&module_name).unwrap_or(&1.0),
         };
