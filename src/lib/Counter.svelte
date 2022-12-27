@@ -73,15 +73,15 @@
     disabled={!Object.values(modulesByCategory).flat().length}>Calculate</button
   >
   {#each Object.entries(modulesByCategory) as [category, modules]}
-    <fieldset class="card mb-3 shadow">
-      <div class="card-body">
-        <legend class="card-title">{category}</legend>
-        <div class="row g-2">
+    <fieldset class="card mb-3 shadow-sm">
+      <div class="card-body p-2">
+        <legend class="card-title h5">{category}</legend>
+        <div class="row g-1">
           {#each modules as mod}
             <div class="col-8">
               <label class="w-100">
                 <span class="visually-hidden">Modulname</span>
-                <input disabled value={mod.label} class="form-control" />
+                <input disabled value={mod.label} class="form-control p-1" />
               </label>
             </div>
             <div class="col">
@@ -90,7 +90,7 @@
                 <input
                   disabled
                   value={mod.credits}
-                  class="form-control text-center"
+                  class="form-control p-1 text-center"
                 />
               </label>
             </div>
@@ -102,7 +102,7 @@
                   value={mod.grade == "Passed"
                     ? "B"
                     : mod.grade.Numeric.toFixed(1)}
-                  class="form-control text-center"
+                  class="form-control p-1 text-center"
                 />
               </label>
             </div>
@@ -112,7 +112,7 @@
                 <input
                   disabled
                   value={mod.weight_modifier}
-                  class="form-control text-center"
+                  class="form-control p-1 text-center"
                 />
               </label>
             </div>
