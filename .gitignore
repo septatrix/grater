@@ -16,8 +16,8 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-### Svelte ###
-# Generated through `npm create vite` with svelte template
+### Vue ###
+# Generated through `npm create vite` with vue template
 # Logs
 logs
 *.log
