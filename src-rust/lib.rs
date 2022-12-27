@@ -24,6 +24,7 @@ pub struct Module {
     weight_modifier: f32,
 }
 
+const STRIKEABLE_CREDIT_TOTAL: f32 = 30.0;
 const MODULE_WEIGHT: Map<&'static str, f32> = phf_map!(
     "Bachelorarbeit" => 1.5,
     "Kolloquium" => 1.5,
@@ -53,28 +54,27 @@ fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
     let mut modules = Vec::new();
 
     for row in output.into_iter().flatten() {
-        // TODO use #![feature(let_else)] once stabilized
         // Modul-ID Typ Module/Fächer Note Vm Ang CP Datum Sem
-        let (kind_text, module, grade, credit_points) = if let [ref _module_id, ref kind, ref module, ref grade, ref _annotation, ref _recognized, ref credit_points, ref _date, ref _semester] =
-            row.as_slice()
-        {
-            (kind.clone(), module, grade, credit_points)
-        } else if let [ref _module_id, ref module, ref grade, ref _annotation, ref _recognized, ref credit_points, ref _date, ref _semester] =
-            row.as_slice()
-        {
-            if module == "Abschlussarbeit" {
-                curr_section = Some((module.clone(), 15.0));
-                continue;
+        let (kind_text, module, grade, credit_points) = match row.as_slice() {
+            [_module_id, kind, module, grade, _annotation, _recognized, credit_points, _date, _semester] => {
+                (kind.clone(), module, grade, credit_points)
             }
-            // We assume that this is the Abschlussarbeit section.
-            // Otherwise the layout must have been misparsed.
-            assert!(
-                curr_section.as_ref().expect("Current section must exist").0 == "Abschlussarbeit",
-                "Current section must be 'Abschlussarbeit' with expected layout"
-            );
-            ("MK".to_string(), module, grade, credit_points)
-        } else {
-            continue;
+            [_module_id, module, grade, _annotation, _recognized, credit_points, _date, _semester] =>
+            {
+                if module == "Abschlussarbeit" {
+                    curr_section = Some((module.clone(), 15.0));
+                    continue;
+                }
+                // We assume that this is the Abschlussarbeit section.
+                // Otherwise the layout must have been misparsed.
+                assert!(
+                    curr_section.as_ref().expect("Current section must exist").0
+                        == "Abschlussarbeit",
+                    "Current section must be 'Abschlussarbeit' with expected layout"
+                );
+                ("MK".to_string(), module, grade, credit_points)
+            }
+            _ => continue,
         };
 
         let module_name = module.replace('\n', " ");
@@ -145,8 +145,7 @@ fn calculate_best_strike_combination(modules: &[Module]) -> String {
             continue;
         }
         strike_candidates_by_category
-            // TODO is this clone useless?
-            .entry(module.category.clone())
+            .entry(&module.category)
             .or_default()
             .push(module);
     }
@@ -156,7 +155,9 @@ fn calculate_best_strike_combination(modules: &[Module]) -> String {
             .values()
             .combinations(count)
             .flat_map(|cat_comb| cat_comb.into_iter().multi_cartesian_product())
-            .filter(|combi| combi.iter().map(|module| module.credits).sum::<f32>() <= 30.0)
+            .filter(|combi| {
+                combi.iter().map(|module| module.credits).sum::<f32>() <= STRIKEABLE_CREDIT_TOTAL
+            })
             .map(|combi| {
                 combi
                     .into_iter()
