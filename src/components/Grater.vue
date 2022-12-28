@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 
+// @ts-ignore
 import * as pdfjs from "pdfjs-dist/build/pdf";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
 import loadPage from "../pdf-table-extractor";
 import * as grater from "../../pkg/grater";
-import type { Module } from "../../pkg/grater";
 import trashIconSvg from "bootstrap-icons/icons/trash.svg?raw";
 import uploadIconSvg from "bootstrap-icons/icons/file-earmark-arrow-up.svg?raw";
 
 let result = ref("");
-let modulesByCategory: Record<string, Module[]> = reactive({});
+let modulesByCategory: Record<string, any[]> = reactive({});
 
 async function loadPdf(e: Event) {
   let fileInput = e.target as HTMLInputElement;
@@ -40,7 +40,7 @@ async function loadPdf(e: Event) {
     .flat()
     .map((table) =>
       table.table.map((row) =>
-        row.map((cell) => (cell === null ? "" : cell.trim()))
+        row.map((cell) => (cell === null ? "" : (cell as string).trim()))
       )
     );
   preparedData.forEach((table) => console.table(table));
@@ -99,7 +99,7 @@ function onSubmit() {
                 <span class="visually-hidden">Modulname</span>
                 <input
                   :value="mod.label"
-                  @input="(e) => (mod.label = e.target.value)"
+                  @input="(e) => (mod.label = (e.target as HTMLInputElement).value)"
                   class="form-control p-1"
                 />
               </label>

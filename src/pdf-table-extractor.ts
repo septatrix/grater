@@ -1,3 +1,6 @@
+// @ts-nocheck
+// TODO properly annotate this file
+
 import { OPS as pdfjsOps, Util } from "pdfjs-dist";
 import type { PDFPageProxy } from "pdfjs-dist";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
