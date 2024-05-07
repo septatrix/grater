@@ -44,7 +44,7 @@ jobs:
       - name: Create wasm package and build page
         run: |
           pnpm exec wasm-pack build
-          pnpm build -- --base="./"
+          pnpm build --base="./"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
