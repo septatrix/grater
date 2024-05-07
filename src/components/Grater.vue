@@ -18,6 +18,7 @@ async function loadPdf(e: Event) {
   const pdf = await getDocument({
     data,
     worker: PDFWorker.fromPort({ port: new pdfjsWorker() }),
+    isEvalSupported: false,
   }).promise;
 
   let loadPromises = [];
