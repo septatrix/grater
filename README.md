@@ -4,31 +4,21 @@
 
 ## Installation instructions
 
-First you have to obtain a patched tabulate-java:
+> [!NOTE]
+> Most up-to-date informations can always be inferred from the GitHub Action
+> which is used to build and deploy this project.
 
-```shell
-git clone git@github.com:tabulapdf/tabula-java.git
-cd tabula-java/
-# Fish shell syntax!
-git apply (curl https://raw.githubusercontent.com/sp1ritCS/tabula-rs/master/0001-add-ffi-constructor-to-CommandLineApp.patch | psub)
-mvn compile assembly:single
-```
+**Prerequisites**:
 
-# Vue 3 + TypeScript + Vite
+* `nodejs`
+* `pnpm`
+* `rust` >= 1.78.0
+  * including the `wasm32-unknown-unknown` target
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+**Setup**:
 
-## Recommended IDE Setup
+Run `pnpm install` to install all dependencies.
+Afterwards, run `pnpm exec wasm-pack build`
+to generate the WASM package of grater.
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-
-## Type Support For `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
-
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
-
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+You should now be ready to run `pnpm run dev`.
