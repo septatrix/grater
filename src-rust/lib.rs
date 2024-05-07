@@ -1,4 +1,3 @@
-#![feature(is_some_and)]
 use std::panic;
 use std::{cmp::Ordering, collections::HashMap, fmt::Write};
 
@@ -37,7 +36,7 @@ const MODULE_WEIGHT: Map<&'static str, f32> = phf_map!(
 
 #[wasm_bindgen(start)]
 pub fn set_panic_hook() {
-    //#[cfg(feature = "console_error_panic_hook")]
+    #[cfg(feature = "console_error_panic_hook")]
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 }
 
@@ -97,7 +96,7 @@ fn parse_tabula_output(output: Vec<Vec<Vec<String>>>) -> Vec<Module> {
             continue;
         }
 
-        let section = curr_section.as_ref().unwrap();
+        let section = curr_section.as_ref().expect("Section should exist");
         // This looks like a module, but skip it if it is a Vorzugsfach
         if section.0 == "Mastervorzugsfächer" {
             continue;
@@ -176,7 +175,7 @@ fn calculate_best_strike_combination(modules: &[Module]) -> String {
     let best_grade = grade_results
         .iter()
         .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal))
-        .unwrap()
+        .expect("Best grade should exist")
         .1;
 
     let mut summary = String::new();

@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { reactive, ref } from "vue";
 
-// @ts-ignore
-import * as pdfjs from "pdfjs-dist/build/pdf";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
-import loadPage from "../pdf-table-extractor";
-import * as grater from "../../pkg/grater";
-import trashIconSvg from "bootstrap-icons/icons/trash.svg?raw";
 import uploadIconSvg from "bootstrap-icons/icons/file-earmark-arrow-up.svg?raw";
+import { PDFWorker, getDocument } from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
+import { calculate_best_grade, extract_modules } from "../../pkg/grater";
+import loadPage from "../pdf-table-extractor";
 
 let result = ref("");
 let modulesByCategory: Record<string, any[]> = reactive({});
@@ -17,9 +15,9 @@ async function loadPdf(e: Event) {
   let files = fileInput.files!;
   let data = await files[0].arrayBuffer();
 
-  const pdf = await pdfjs.getDocument({
+  const pdf = await getDocument({
     data,
-    worker: pdfjs.PDFWorker.fromPort({ port: new pdfjsWorker() }),
+    worker: PDFWorker.fromPort({ port: new pdfjsWorker() }),
   }).promise;
 
   let loadPromises = [];
@@ -44,7 +42,7 @@ async function loadPdf(e: Event) {
       )
     );
   preparedData.forEach((table) => console.table(table));
-  let modules = grater.extract_modules(preparedData);
+  let modules = extract_modules(preparedData);
   console.table(modules);
   for (let module of modules) {
     if (!(module.category in modulesByCategory)) {
@@ -65,7 +63,7 @@ function onSubmit() {
       grade:
         module.grade === "B" ? "Passed" : { Numeric: parseFloat(module.grade) },
     }));
-  result.value = grater.calculate_best_grade(modules);
+  result.value = calculate_best_grade(modules);
 }
 </script>
 
