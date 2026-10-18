@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" vapor>
 import Grater from "./components/Grater.vue";
 import graterUrl from "./assets/grater.svg?url";
 </script>
@@ -18,8 +18,8 @@ import graterUrl from "./assets/grater.svg?url";
   </main>
 </template>
 
-<style>
-@import "bootstrap";
+<style lang="scss">
+@use "bootstrap/scss/bootstrap";
 
 :root {
   overflow-y: scroll;

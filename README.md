@@ -12,7 +12,7 @@
 
 * `nodejs`
 * `pnpm`
-* `rust` >= 1.78.0
+* `rust` (stable)
   * including the `wasm32-unknown-unknown` target
 
 **Setup**:

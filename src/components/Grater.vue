@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script setup lang="ts" vapor>
 import { reactive, ref } from "vue";
 
 import uploadIconSvg from "bootstrap-icons/icons/file-earmark-arrow-up.svg?raw";
 import { PDFWorker, getDocument } from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?worker";
 import { calculate_best_grade, extract_modules } from "../../pkg/grater";
 import loadPage from "../pdf-table-extractor";
 
@@ -17,8 +17,7 @@ async function loadPdf(e: Event) {
 
   const pdf = await getDocument({
     data,
-    worker: PDFWorker.fromPort({ port: new pdfjsWorker() }),
-    isEvalSupported: false,
+    worker: PDFWorker.create({ port: new pdfjsWorker() }),
   }).promise;
 
   let loadPromises = [];
@@ -73,14 +72,14 @@ function onSubmit() {
 
   <form @submit.prevent="onSubmit">
     <label class="w-100 mb-3">
-      <span class="btn btn-secondary w-100">
+      <span class="btn-solid theme-secondary w-100">
         <span v-html="uploadIconSvg" /> Upload Kontoauszug
       </span>
       <input class="visually-hidden" type="file" @input="loadPdf" />
     </label>
 
     <button
-      class="btn btn-primary mb-3 w-100"
+      class="btn-solid theme-primary mb-3 w-100"
       :disabled="!Object.values(modulesByCategory).flat().length"
     >
       Calculate
@@ -90,7 +89,7 @@ function onSubmit() {
       class="card mb-3 shadow-sm"
     >
       <div class="card-body p-2">
-        <legend class="card-title h5">{{ category }}</legend>
+        <legend class="h5">{{ category }}</legend>
         <div class="row g-1">
           <template v-for="mod in modules">
             <div class="col-8">
