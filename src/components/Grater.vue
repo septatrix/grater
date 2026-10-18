@@ -1,13 +1,14 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { reactive, ref } from "vue";
 
 import uploadIconSvg from "bootstrap-icons/icons/file-earmark-arrow-up.svg?raw";
 import { PDFWorker, getDocument } from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker?worker";
-import { calculate_best_grade, extract_modules } from "../../pkg/grater";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?worker";
+import { Degree, calculate_best_grade, extract_modules } from "../../pkg/grater";
 import loadPage from "../pdf-table-extractor";
 
 let result = ref("");
+let degree = ref(Degree.Bachelor);
 let modulesByCategory: Record<string, any[]> = reactive({});
 
 async function loadPdf(e: Event) {
@@ -17,8 +18,7 @@ async function loadPdf(e: Event) {
 
   const pdf = await getDocument({
     data,
-    worker: PDFWorker.fromPort({ port: new pdfjsWorker() }),
-    isEvalSupported: false,
+    worker: PDFWorker.create({ port: new pdfjsWorker() }),
   }).promise;
 
   let loadPromises = [];
@@ -43,7 +43,7 @@ async function loadPdf(e: Event) {
       )
     );
   preparedData.forEach((table) => console.table(table));
-  let modules = extract_modules(preparedData);
+  let modules = extract_modules(preparedData, degree.value);
   console.table(modules);
   for (let module of modules) {
     if (!(module.category in modulesByCategory)) {
@@ -64,7 +64,7 @@ function onSubmit() {
       grade:
         module.grade === "B" ? "Passed" : { Numeric: parseFloat(module.grade) },
     }));
-  result.value = calculate_best_grade(modules);
+  result.value = calculate_best_grade(modules, degree.value);
 }
 </script>
 
@@ -73,14 +73,22 @@ function onSubmit() {
 
   <form @submit.prevent="onSubmit">
     <label class="w-100 mb-3">
-      <span class="btn btn-secondary w-100">
+      <span class="visually-hidden">Studiengang</span>
+      <select v-model.number="degree" class="form-control">
+        <option :value="Degree.Bachelor">Bachelor Informatik (PO 2022)</option>
+        <option :value="Degree.Master">Master Informatik (PO 2023)</option>
+      </select>
+    </label>
+
+    <label class="w-100 mb-3">
+      <span class="btn btn-solid theme-secondary w-100">
         <span v-html="uploadIconSvg" /> Upload Kontoauszug
       </span>
       <input class="visually-hidden" type="file" @input="loadPdf" />
     </label>
 
     <button
-      class="btn btn-primary mb-3 w-100"
+      class="btn btn-solid theme-primary mb-3 w-100"
       :disabled="!Object.values(modulesByCategory).flat().length"
     >
       Calculate

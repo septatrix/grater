@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createVaporApp, vaporInteropPlugin } from "vue";
 import App from "./App.vue";
 
-createApp(App).mount("#app");
+createVaporApp(App).use(vaporInteropPlugin).mount("#app");

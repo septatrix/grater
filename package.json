@@ -9,18 +9,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "bootstrap": "^5.3.3",
-    "bootstrap-icons": "^1.11.3",
-    "pdfjs-dist": "^4.2.67",
-    "vue": "^3.4.27"
+    "bootstrap": "6.0.0-alpha.1",
+    "bootstrap-icons": "^1.13.2",
+    "pdfjs-dist": "^6.4.299",
+    "vue": "3.6.0-rc.12"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.4",
-    "sass": "^1.77.0",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.11",
-    "vite-plugin-wasm": "^3.3.0",
-    "vue-tsc": "^2.0.16",
-    "wasm-pack": "^0.12.1"
+    "@vitejs/plugin-vue": "^6.0.10",
+    "sass": "^1.105.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4",
+    "vite-plugin-wasm": "^3.6.0",
+    "vue-tsc": "^3.3.13",
+    "wasm-pack": "^0.15.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "wasm-pack"
+    ]
   }
 }
